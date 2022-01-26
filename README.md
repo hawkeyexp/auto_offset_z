@@ -47,7 +47,13 @@ offsetadjust: 0.0               # Manual offset correction option - start with z
 </code></pre>
 ## Installation:
 
-Clone the repo to your home folder and run the install.sh script.
+Login to your pi by ssh. Clone the repo to your homefolder with this command:
+
+<pre><code>
+git clone https://github.com/hawkeyexp/auto_offset_z.git<br>
+cd ~/auto_offset_z<br>
+./instal.sh<br>
+</code></pre>
 
 For further updates you can add it to moonraker's updated manager:
 
