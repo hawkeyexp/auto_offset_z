@@ -20,17 +20,17 @@ else
    rm -f ~/klipper/klippy/extras/auto_offset_z.py 2>&1>/dev/null
    ln -s ~/auto_offset_z/auto_offset_z.py ~/klipper/klippy/extras/auto_offset_z.py
    sudo /bin/sh -c "cat > /etc/systemd/system/auto_offset_z.service" << EOF
-   [Unit]
-   Description=Dummy Service for auto_offset_z plugin
-   After=klipper.service
-   [Service]
-   Type=oneshot
-   RemainAfterExit=yes
-   ExecStart=/bin/sleep 1
-   ExecStartPost=/usr/sbin/service klipper restart
-   [Install]
-   WantedBy=multi-user.target
-   EOF
+[Unit]
+Description=Dummy Service for auto_offset_z plugin
+After=klipper.service
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sleep 1
+ExecStartPost=/usr/sbin/service klipper restart
+[Install]
+WantedBy=multi-user.target
+EOF
    sudo systemctl daemon-reload
    sudo systemctl enable auto_offset_z
    sudo systemctl restart auto_offset_z
