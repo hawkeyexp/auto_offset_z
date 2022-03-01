@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2022 Marc Hillesheim <marc.hillesheim@outlook.de>
 #
-# Version 0.0.2 / 01.03.2022
+# Version 0.0.3 / 01.03.2022
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
@@ -26,6 +26,8 @@ class AutoOffsetZCalibration:
         self.endstop_pin = zconfig.get('endstop_pin')
         self.speed = config.getfloat('speed', 50.0, above=0.)
         self.offsetadjust = config.getfloat('offsetadjust', 0.0)
+        self.offset_min = config.getfloat('offset_min', -1)
+        self.offset_max = config.getfloat('offset_max', 1)
         self.gcode = self.printer.lookup_object('gcode')
         self.gcode_move = self.printer.lookup_object('gcode_move')
         self.gcode.register_command("AUTO_OFFSET_Z", self.cmd_AUTO_OFFSET_Z, desc=self.cmd_AUTO_OFFSET_Z_help)
@@ -146,6 +148,11 @@ class AutoOffsetZCalibration:
         offset = self.rounding((0 - diffbedendstop  + endstopswitch) + self.offsetadjust,3)
 
         gcmd.respond_info("AutoOffsetZ:\nBed: %.3f\nEndstop: %.3f\nDiff: %.3f\nManual Adjust: %.3f\nTotal Calculated Offset: %.3f" % (zbed[2],zendstop[2],diffbedendstop,self.offsetadjust,offset,))
+
+        # failsave
+        if offset < self.offset_min or offset > self.offset_max:
+            raise gcmd.error("AutoOffsetZ: Your calculated offset is out of config limits! (default -1 mm to 1 mm) - abort...")
+
         self.set_offset(offset)
 
     cmd_AUTO_OFFSET_Z_help = "Test endstop and bed surface to calcualte g-code offset for Z"

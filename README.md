@@ -42,6 +42,8 @@ speed: 100                      # X/Y travel speed between the two points
 z_hop: 10                       # Lift nozzle to this value after probing and for move
 z_hop_speed: 20                 # Hop speed of probe
 ignore_alignment: False         # Optional - this allows ignoring the presence of z-tilt or quad gantry leveling config section
+offset_min: -1                  # Optional - by default -1 is used - used as failsave to raise an error if offset is lower than this value
+offset_max: 1                   # Optional - by default 1 is used - used as failsave to raise an error if offset is higher than this value
 offsetadjust: 0.0               # Manual offset correction option - start with zero and optimize during print with babysteps
                                   1) If you need to lower the nozzle from -0.71 to -0.92 for example your value is -0.21.
                                   2) If you need to move more away from bed add a positive value.
