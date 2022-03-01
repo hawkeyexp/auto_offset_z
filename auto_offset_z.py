@@ -4,11 +4,12 @@
 #
 # Copyright (C) 2022 Marc Hillesheim <marc.hillesheim@outlook.de>
 #
-# Version 0.0.1 / 25.01.2022
+# Version 0.0.2 / 01.03.2022
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
 from . import probe
+import math
 
 class AutoOffsetZCalibration:
     def __init__(self, config):
@@ -21,6 +22,7 @@ class AutoOffsetZCalibration:
         self.z_hop_speed = config.getfloat('z_hop_speed', 15., above=0.)
         zconfig = config.getsection('stepper_z')
         self.max_z = zconfig.getfloat('position_max', note_valid=False)
+        self.ignore_alignment = config.getboolean('ignore_alignment', False)
         self.endstop_pin = zconfig.get('endstop_pin')
         self.speed = config.getfloat('speed', 50.0, above=0.)
         self.offsetadjust = config.getfloat('offsetadjust', 0.0)
@@ -59,14 +61,24 @@ class AutoOffsetZCalibration:
             self.adjusttype = "qgl"
         elif config.has_section("z_tilt"):
             self.adjusttype = "ztilt"
+        elif self.ignore_alignment == 1:
+            self.adjusttype = "ignore"
         else:
             raise config.error("AutoOffsetZ: This can only be used if your config contains a section [quad_gantry_level] or [z_tilt].")
+
+    # custom round operation based mathematically instead of python default cutting off
+    def rounding(self,n, decimals=0):
+        expoN = n * 10 ** decimals
+        if abs(expoN) - abs(math.floor(expoN)) < 0.5:
+            return math.floor(expoN) / 10 ** decimals
+        return math.ceil(expoN) / 10 ** decimals
 
     def cmd_AUTO_OFFSET_Z(self, gcmd):
         # check if all axes are homed
         toolhead = self.printer.lookup_object('toolhead')
         curtime = self.printer.get_reactor().monotonic()
         kin_status = toolhead.get_kinematics().get_status(curtime)
+        skip = 0
 
         # debug output start #
         #gcmd.respond_raw("AutoOffsetZ (Homeing Result): %s" % (kin_status))
@@ -84,6 +96,9 @@ class AutoOffsetZCalibration:
 
             # check if qgl has applied
             alignment_status = self.printer.lookup_object('quad_gantry_level').get_status(gcmd)
+            if alignment_status['applied'] != 1:
+                raise gcmd.error("AutoOffsetZ: You have to do a quad gantry level first")
+
         elif self.adjusttype == "ztilt":
             # debug output start #
             #gcmd.respond_raw("AutoOffsetZ (Alignment Type): %s" % (self.adjusttype))
@@ -91,6 +106,11 @@ class AutoOffsetZCalibration:
 
             # check if ztilt has applied
             alignment_status = self.printer.lookup_object('z_tilt').get_status(gcmd)
+            if alignment_status['applied'] != 1:
+                raise gcmd.error("AutoOffsetZ: You have to do a z tilt first")
+
+        elif self.adjusttype == "ignore":
+            gcmd.respond_info("AutoOffsetZ: Ignoring alignment as you requested by config ...")
         else:
             raise config.error("AutoOffsetZ: Your printer has no config for [quad_gantry_level] or [z_tilt] which is needed to work correctly.")
 
@@ -98,15 +118,6 @@ class AutoOffsetZCalibration:
         #gcmd.respond_raw("AutoOffsetZ (Alignment Result): %s" % (alignment_status))
         # debug output end #
 
-        if (alignment_status['applied'] != 1):
-            if self.adjusttype == "qgl":
-                raise gcmd.error("AutoOffsetZ: You have to do a quad gantry level first")
-            elif self.adjusttype == "ztilt":
-                raise gcmd.error("AutoOffsetZ: You have to do a z tilt first")
-            else:
-                raise config.error("AutoOffsetZ: Your printer has no config section for [quad_gantry_level] or [z_tilt] which is required for auto_offset_z to work correctly.")
-
-        # reset z offset to zero
         gcmd_offset = self.gcode.create_gcode_command("SET_GCODE_OFFSET",
                                                       "SET_GCODE_OFFSET",
                                                       {'Z': 0})
@@ -131,9 +142,10 @@ class AutoOffsetZCalibration:
         # calcualtion offset
         endstopswitch = 0.5
         diffbedendstop = zendstop[2] - zbed[2]
-        offset = (0 - diffbedendstop  + endstopswitch) + self.offsetadjust
+        #offset = (0 - diffbedendstop  + endstopswitch) + self.offsetadjust
+        offset = self.rounding((0 - diffbedendstop  + endstopswitch) + self.offsetadjust,3)
 
-        gcmd.respond_info("AutoOffsetZ:\nBed: %.6f\nEndstop: %.6f\nDiff: %.6f\nManual Adjust: %.6f\nTotal Calculated Offset: %.6f" % (zbed[2],zendstop[2],diffbedendstop,self.offsetadjust,offset,))
+        gcmd.respond_info("AutoOffsetZ:\nBed: %.3f\nEndstop: %.3f\nDiff: %.3f\nManual Adjust: %.3f\nTotal Calculated Offset: %.3f" % (zbed[2],zendstop[2],diffbedendstop,self.offsetadjust,offset,))
         self.set_offset(offset)
 
     cmd_AUTO_OFFSET_Z_help = "Test endstop and bed surface to calcualte g-code offset for Z"
@@ -149,6 +161,7 @@ class AutoOffsetZCalibration:
                                                       "SET_GCODE_OFFSET",
                                                       {'Z': offset})
         self.gcode_move.cmd_SET_GCODE_OFFSET(gcmd_offset)
+
 
 def load_config(config):
     return AutoOffsetZCalibration(config)
