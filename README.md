@@ -55,7 +55,7 @@ Login to your pi by ssh. Clone the repo to your homefolder with this command:
 <pre><code>
 git clone https://github.com/hawkeyexp/auto_offset_z.git<br>
 cd ~/auto_offset_z<br>
-./instal.sh<br>
+./install.sh<br>
 </code></pre>
 
 For further updates you can add it to moonraker's updated manager:
