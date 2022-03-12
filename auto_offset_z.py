@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2022 Marc Hillesheim <marc.hillesheim@outlook.de>
 #
-# Version 0.0.3 / 01.03.2022
+# Version 0.0.4 / 12.03.2022
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
@@ -28,6 +28,8 @@ class AutoOffsetZCalibration:
         self.offsetadjust = config.getfloat('offsetadjust', 0.0)
         self.offset_min = config.getfloat('offset_min', -1)
         self.offset_max = config.getfloat('offset_max', 1)
+        self.endstop_min = config.getfloat('endstop_min', 0)
+        self.endstop_max = config.getfloat('endstop_max', 0)
         self.gcode = self.printer.lookup_object('gcode')
         self.gcode_move = self.printer.lookup_object('gcode_move')
         self.gcode.register_command("AUTO_OFFSET_Z", self.cmd_AUTO_OFFSET_Z, desc=self.cmd_AUTO_OFFSET_Z_help)
@@ -151,7 +153,14 @@ class AutoOffsetZCalibration:
 
         # failsave
         if offset < self.offset_min or offset > self.offset_max:
-            raise gcmd.error("AutoOffsetZ: Your calculated offset is out of config limits! (default -1 mm to 1 mm) - abort...")
+            raise gcmd.error("AutoOffsetZ: Your calculated offset is out of config limits! (Min: %.3f mm | Max: %.3f mm) - abort..." % (self.offset_min,self.offset_max))
+
+
+        if self.endstop_min != 0 and zendstop < self.endstop_min:
+            raise gcmd.error("AutoOffsetZ: Your endstop value is out of config limits! (Min: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_min,zendstop))
+
+        if self.endstop_max != 0 and zendstop > self.endstop_max:
+            raise gcmd.error("AutoOffsetZ: Your endstop value is out of config limits! (Max: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_max,zendstop))
 
         self.set_offset(offset)
 
