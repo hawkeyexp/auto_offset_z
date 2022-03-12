@@ -155,12 +155,11 @@ class AutoOffsetZCalibration:
         if offset < self.offset_min or offset > self.offset_max:
             raise gcmd.error("AutoOffsetZ: Your calculated offset is out of config limits! (Min: %.3f mm | Max: %.3f mm) - abort..." % (self.offset_min,self.offset_max))
 
+        if self.endstop_min != 0 and zendstop[2] < self.endstop_min:
+            raise gcmd.error("AutoOffsetZ: Your endstop value is out of config limits! (Min: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_min,zendstop[2]))
 
-        if self.endstop_min != 0 and zendstop < self.endstop_min:
-            raise gcmd.error("AutoOffsetZ: Your endstop value is out of config limits! (Min: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_min,zendstop))
-
-        if self.endstop_max != 0 and zendstop > self.endstop_max:
-            raise gcmd.error("AutoOffsetZ: Your endstop value is out of config limits! (Max: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_max,zendstop))
+        if self.endstop_max != 0 and zendstop[2] > self.endstop_max:
+            raise gcmd.error("AutoOffsetZ: Your endstop value is out of config limits! (Max: %.3f mm | Meassured: %.3f mm) - abort..." % (self.endstop_max,zendstop[2]))
 
         self.set_offset(offset)
 
