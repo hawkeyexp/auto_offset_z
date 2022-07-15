@@ -30,6 +30,7 @@ class AutoOffsetZCalibration:
         self.offset_max = config.getfloat('offset_max', 1)
         self.endstop_min = config.getfloat('endstop_min', 0)
         self.endstop_max = config.getfloat('endstop_max', 0)
+        self.conductive_endstop = config.getboolean('conductive_endstop', False)
         self.gcode = self.printer.lookup_object('gcode')
         self.gcode_move = self.printer.lookup_object('gcode_move')
         self.gcode.register_command("AUTO_OFFSET_Z", self.cmd_AUTO_OFFSET_Z, desc=self.cmd_AUTO_OFFSET_Z_help)
@@ -143,8 +144,13 @@ class AutoOffsetZCalibration:
         if self.z_hop:
             toolhead.manual_move([None, None, self.z_hop], self.z_hop_speed)
 
+        # the use of a conductive nozzle onto a pad therefore no endstop switch offset is needed 
+        if self.conductive_endstop != 0:
+            endstopswitch = 0.0
+        else:
+            endstopswitch = 0.5
+        
         # calcualtion offset
-        endstopswitch = 0.5
         diffbedendstop = zendstop[2] - zbed[2]
         #offset = (0 - diffbedendstop  + endstopswitch) + self.offsetadjust
         offset = self.rounding((0 - diffbedendstop  + endstopswitch) + self.offsetadjust,3)
