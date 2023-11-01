@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2022 Marc Hillesheim <marc.hillesheim@outlook.de>
 #
-# Version 0.0.4 / 12.03.2022
+# Version 0.0.5 / 01.11.2023
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
@@ -23,9 +23,11 @@ class AutoOffsetZCalibration:
         zconfig = config.getsection('stepper_z')
         self.max_z = zconfig.getfloat('position_max', note_valid=False)
         self.ignore_alignment = config.getboolean('ignore_alignment', False)
+        self.ignore_endstopoffset = config.getboolean('ignore_endstopoffset', False)
         self.endstop_pin = zconfig.get('endstop_pin')
         self.speed = config.getfloat('speed', 50.0, above=0.)
-        self.offsetadjust = config.getfloat('offsetadjust', 0.0)
+        self.offsetadjust = config.getfloat('offsetadjust', 0)
+        self.internalendstopoffset = config.getfloat('internalendstopoffset', 0.5)
         self.offset_min = config.getfloat('offset_min', -1)
         self.offset_max = config.getfloat('offset_max', 1)
         self.endstop_min = config.getfloat('endstop_min', 0)
@@ -82,10 +84,10 @@ class AutoOffsetZCalibration:
         toolhead = self.printer.lookup_object('toolhead')
         curtime = self.printer.get_reactor().monotonic()
         kin_status = toolhead.get_kinematics().get_status(curtime)
-        skip = 0
+        paramoffsetadjust = gcmd.get_float('OFFSETADJUST', default=0)
 
         # debug output start #
-        #gcmd.respond_raw("AutoOffsetZ (Homeing Result): %s" % (kin_status))
+        # gcmd.respond_raw("AutoOffsetZ (Homeing Result): %s" % (kin_status))
         # debug output end #
 
         if ('x' not in kin_status['homed_axes'] or
@@ -144,12 +146,17 @@ class AutoOffsetZCalibration:
             toolhead.manual_move([None, None, self.z_hop], self.z_hop_speed)
 
         # calcualtion offset
-        endstopswitch = 0.5
-        diffbedendstop = zendstop[2] - zbed[2]
-        #offset = (0 - diffbedendstop  + endstopswitch) + self.offsetadjust
-        offset = self.rounding((0 - diffbedendstop  + endstopswitch) + self.offsetadjust,3)
+        if self.ignore_endstopoffset == 1:
+            self.internalendstopoffset = 0
+            gcmd.respond_info("AutoOffsetZ: Igoring internal endstop offset as you requested by config ...")
 
-        gcmd.respond_info("AutoOffsetZ:\nBed: %.3f\nEndstop: %.3f\nDiff: %.3f\nManual Adjust: %.3f\nTotal Calculated Offset: %.3f" % (zbed[2],zendstop[2],diffbedendstop,self.offsetadjust,offset,))
+        diffbedendstop = zendstop[2] - zbed[2]
+        if paramoffsetadjust != 0:
+            offset = self.rounding((0 - diffbedendstop  + self.internalendstopoffset) + paramoffsetadjust,3)
+            gcmd.respond_info("AutoOffsetZ:\nBed: %.3f\nEndstop: %.3f\nDiff: %.3f\nParam Manual Adjust: %.3f\nTotal Calculated Offset: %.3f" % (zbed[2],zendstop[2],diffbedendstop,paramoffsetadjust,offset,))
+        else:
+            offset = self.rounding((0 - diffbedendstop  + self.internalendstopoffset) + self.offsetadjust,3)
+            gcmd.respond_info("AutoOffsetZ:\nBed: %.3f\nEndstop: %.3f\nDiff: %.3f\nConfig Manual Adjust: %.3f\nTotal Calculated Offset: %.3f" % (zbed[2],zendstop[2],diffbedendstop,self.offsetadjust,offset,))
 
         # failsave
         if offset < self.offset_min or offset > self.offset_max:

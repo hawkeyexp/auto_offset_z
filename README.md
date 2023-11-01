@@ -25,11 +25,12 @@ config section of the plugin.
 
                                                     | |
                                       Nozzle        | |  BLTouch
-                                      |_   _|        -
-                                        \_/               
+                                      |_   _|        -___________________
+                                        \_/______________________________| Z-Offset BLTouch
 
-Bed                                      _ 
---------------------------------------- | | Endstop Pin
+Bed                                      __________________________________________ 
+_______________________________________ | | Endstop Pin ___________________________| Endstop-Bed Offset
+                                      __| |__
 </code></pre>
 
 ## Configuration for klipper:
@@ -41,7 +42,8 @@ endstop_xy_position:233.5,358   # Physical endstop nozzle over pin
 speed: 100                      # X/Y travel speed between the two points
 z_hop: 10                       # Lift nozzle to this value after probing and for move
 z_hop_speed: 20                 # Hop speed of probe
-ignore_alignment: False         # Optional - this allows ignoring the presence of z-tilt or quad gantry leveling config section
+ignore_alignment: False         # Optional - by default False - this allows ignoring the presence of z-tilt or quad gantry leveling config section
+ignore_internaloffset: False    # Optional - by default False - this allows ignoring the fixed internal offset of 0.5mm if no microswitch is used while using other methods
 offset_min: -1                  # Optional - by default -1 is used - used as failsave to raise an error if offset is lower than this value
 offset_max: 1                   # Optional - by default 1 is used - used as failsave to raise an error if offset is higher than this value
 endstop_min: 0                  # Optional - by default disabled (0) - used as failsave to raise an error if endstop is lower than this value
@@ -49,6 +51,9 @@ endstop_max: 0                  # Optional - by default disabled (0) - used as f
 offsetadjust: 0.0               # Manual offset correction option - start with zero and optimize during print with babysteps
                                   1) If you need to lower the nozzle from -0.71 to -0.92 for example your value is -0.21.
                                   2) If you need to move more away from bed add a positive value.
+                                  3) With version 0.0.5 of this plugin you can optinal use a parameter for example: AUTO_OFFSET_Z OFFSETADJUST=0.1 - this way the value
+                                     from config section is ignored.
+
 </code></pre>
 ## Installation:
 
@@ -74,6 +79,15 @@ install_script: install.sh
 
 in general an inductive probe should also work this way if it is able to detect the endstop pin but it is not tested and you have to
 ensure the probe is really detecting the endstop pin and not the bed surface which is possible really close to the pin.
+
+## sample code:
+AUTO_OFFSET_Z
+This will use configured params from config section only - ensure your params are valid also in probe section
+
+AUTO_OFFSET_Z OFFSEADJUST=0.1
+This will ignore the offsetadjust value from config section and use the paramameter value given - this is helpfull for materials which needs a mire tight nozzle
+or a mor far nozzle to print correcntly - you can handle what is needed in your macros during print and for example detect material type by filenames of the printjob (cura)
+or additional gcode params for material in superslicer etc.
 
 ## Last words:
 
