@@ -81,10 +81,10 @@ in general an inductive probe should also work this way if it is able to detect 
 ensure the probe is really detecting the endstop pin and not the bed surface which is possible really close to the pin.
 
 ## sample code:
-AUTO_OFFSET_Z
+<code>AUTO_OFFSET_Z</code>
 This will use configured params from config section only - ensure your params are valid also in probe section
 
-AUTO_OFFSET_Z OFFSEADJUST=0.1
+<code>AUTO_OFFSET_Z OFFSEADJUST=0.1</code>
 This will ignore the offsetadjust value from config section and use the paramameter value given - this is helpfull for materials which needs a mire tight nozzle
 or a mor far nozzle to print correcntly - you can handle what is needed in your macros during print and for example detect material type by filenames of the printjob (cura)
 or additional gcode params for material in superslicer etc.
