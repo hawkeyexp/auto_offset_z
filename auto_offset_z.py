@@ -131,7 +131,7 @@ class AutoOffsetZCalibration:
 
         # Move with probe or bltouch to endstop XY position and test surface z position
         gcmd.respond_info("AutoOffsetZ: Probing endstop ...")
-        toolhead.manual_move([self.endstop_x_pos - self.x_offset, self.endstop_y_pos - self.y_offset], self.speed)
+        toolhead.manual_move([self.endstop_x_pos - self.x_offset, self.endstop_y_pos - self.y_offset, self.z_hop], self.speed)
         zendstop = self.printer.lookup_object('probe').run_probe(gcmd)
         # Perform Z Hop
         if self.z_hop:
