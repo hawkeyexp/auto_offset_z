@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2022 Marc Hillesheim <marc.hillesheim@outlook.de>
 #
-# Version 0.0.5 / 01.11.2023
+# Version 0.0.6 / 13.07.2024 | Probe Fix from AndreyShpilevoy
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
@@ -85,6 +85,7 @@ class AutoOffsetZCalibration:
         curtime = self.printer.get_reactor().monotonic()
         kin_status = toolhead.get_kinematics().get_status(curtime)
         paramoffsetadjust = gcmd.get_float('OFFSETADJUST', default=0)
+        probe_obj = self.printer.lookup_object('probe', None)
 
         # debug output start #
         # gcmd.respond_raw("AutoOffsetZ (Homeing Result): %s" % (kin_status))
@@ -132,7 +133,12 @@ class AutoOffsetZCalibration:
         # Move with probe or bltouch to endstop XY position and test surface z position
         gcmd.respond_info("AutoOffsetZ: Probing endstop ...")
         toolhead.manual_move([self.endstop_x_pos - self.x_offset, self.endstop_y_pos - self.y_offset, self.z_hop], self.speed)
-        zendstop = self.printer.lookup_object('probe').run_probe(gcmd)
+
+        probe_session = probe_obj.start_probe_session(gcmd)
+        probe_session.run_probe(gcmd)
+        zendstop = probe_session.pull_probed_results()[0]
+        probe_session.end_probe_session()
+
         # Perform Z Hop
         if self.z_hop:
             toolhead.manual_move([None, None, self.z_hop], self.z_hop_speed)
@@ -140,7 +146,12 @@ class AutoOffsetZCalibration:
         # Move with probe or bltouch to center XY position and test surface z position
         gcmd.respond_info("AutoOffsetZ: Probing bed ...")
         toolhead.manual_move([self.center_x_pos - self.x_offset, self.center_y_pos - self.y_offset], self.speed)
-        zbed = self.printer.lookup_object('probe').run_probe(gcmd)
+
+        probe_session = probe_obj.start_probe_session(gcmd)
+        probe_session.run_probe(gcmd)
+        zbed = probe_session.pull_probed_results()[0]
+        probe_session.end_probe_session()
+
         # Perform Z Hop
         if self.z_hop:
             toolhead.manual_move([None, None, self.z_hop], self.z_hop_speed)
