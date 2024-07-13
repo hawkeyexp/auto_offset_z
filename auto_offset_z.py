@@ -4,7 +4,7 @@
 #
 # Copyright (C) 2022 Marc Hillesheim <marc.hillesheim@outlook.de>
 #
-# Version 0.0.6 / 13.07.2024
+# Version 0.0.6 / 13.07.2024 | Probe Fix from AndreyShpilevoy
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 
@@ -132,7 +132,7 @@ class AutoOffsetZCalibration:
 
         # Move with probe or bltouch to endstop XY position and test surface z position
         gcmd.respond_info("AutoOffsetZ: Probing endstop ...")
-        toolhead.manual_move([self.endstop_x_pos - self.x_offset, self.endstop_y_pos - self.y_offset], self.speed)
+        toolhead.manual_move([self.endstop_x_pos - self.x_offset, self.endstop_y_pos - self.y_offset, self.z_hop], self.speed)
 
         probe_session = probe_obj.start_probe_session(gcmd)
         probe_session.run_probe(gcmd)
